@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.myapplication.MainActivity1">
+
+    <com.bitmovin.player.BitmovinPlayerView
+        android:id="@+id/bitmovinPlayerView"
+        android:layout_width="match_parent"
+        android:layout_height="300dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true">
+
+    </com.bitmovin.player.BitmovinPlayerView>
+
+    <Button
+        android:id="@+id/btnExo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Exo Player" />
+
+    <Button
+        android:id="@+id/btnPlay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/btnExo"
+        android:text="PLAY" />
+
+</RelativeLayout>
