@@ -15,17 +15,5 @@
 
     </com.bitmovin.player.BitmovinPlayerView>
 
-    <Button
-        android:id="@+id/btnExo"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Exo Player" />
-
-    <Button
-        android:id="@+id/btnPlay"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/btnExo"
-        android:text="PLAY" />
 
 </RelativeLayout>
