@@ -33,7 +33,4 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.bitmovin.player:playercore:2.23.1'
     implementation 'com.loopj.android:android-async-http:1.4.9'
-
-    implementation 'com.google.android.gms:play-services-cast-framework:16.1.2'
-    implementation 'com.google.ads.interactivemedia.v3:interactivemedia:3.8.5'
 }

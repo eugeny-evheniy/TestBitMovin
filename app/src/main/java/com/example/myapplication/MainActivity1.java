@@ -26,7 +26,6 @@ import com.bitmovin.player.config.media.SourceConfiguration;
 import com.bitmovin.player.config.media.SourceItem;
 import com.bitmovin.player.config.track.MimeTypes;
 import com.bitmovin.player.config.track.SubtitleTrack;
-import com.dmk.drm_player.MainActivity;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 

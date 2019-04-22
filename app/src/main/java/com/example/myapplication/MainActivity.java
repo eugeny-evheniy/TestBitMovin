@@ -14,6 +14,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ListView;
@@ -32,11 +33,18 @@ import com.bitmovin.player.config.track.MimeTypes;
 import com.bitmovin.player.offline.OfflineContentManager;
 import com.bitmovin.player.offline.OfflineContentManagerListener;
 import com.bitmovin.player.offline.OfflineSourceItem;
+import com.bitmovin.player.offline.options.AudioOfflineOptionEntry;
 import com.bitmovin.player.offline.options.OfflineContentOptions;
 import com.bitmovin.player.offline.options.OfflineOptionEntry;
 import com.bitmovin.player.offline.options.OfflineOptionEntryAction;
 import com.bitmovin.player.offline.options.OfflineOptionEntryState;
+import com.bitmovin.player.offline.options.VideoOfflineOptionEntry;
 import com.google.gson.Gson;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,6 +52,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import cz.msebera.android.httpclient.Header;
 
 public class MainActivity extends AppCompatActivity implements OfflineContentManagerListener, ListItemActionListener
 {
@@ -75,7 +85,7 @@ public class MainActivity extends AppCompatActivity implements OfflineContentMan
         this.rootFolder = this.getDir("offline", ContextWrapper.MODE_PRIVATE);
 
         // Creating the ListView containing 2 example streams, which can be downloaded using this app.
-        this.listItems = getListItems();
+        this.listItems = new ArrayList<>(); //getListItems();
         this.listAdapter = new ListAdapter(this, 0, this.listItems, this);
         this.listView.setAdapter(this.listAdapter);
         this.listView.setOnItemClickListener(new AdapterView.OnItemClickListener()
@@ -86,13 +96,13 @@ public class MainActivity extends AppCompatActivity implements OfflineContentMan
                 onListItemClicked((ListItem) parent.getItemAtPosition(position));
             }
         });
+        this.getDemoWidevine();
     }
 
     @Override
     protected void onResume()
     {
         super.onResume();
-        requestOfflineContentOptions(this.listItems);
     }
 
     @Override
@@ -278,6 +288,9 @@ public class MainActivity extends AppCompatActivity implements OfflineContentMan
                 // Won't happen
             }
             entriesAsText[i] = oh.getId() + "-" + oh.getMimeType();
+            if (oh instanceof VideoOfflineOptionEntry){
+                entriesAsText[i] += "(" + ((VideoOfflineOptionEntry)oh).getWidth() +  "*" + ((VideoOfflineOptionEntry)oh).getHeight() + ")";
+            }
             entriesCheckList[i] = oh.getState() == OfflineOptionEntryState.DOWNLOADED || oh.getAction() == OfflineOptionEntryAction.DOWNLOAD;
         }
 
@@ -369,37 +382,65 @@ public class MainActivity extends AppCompatActivity implements OfflineContentMan
         return null;
     }
 
-    private List<ListItem> getListItems()
+    private void getDemoWidevine()
     {
-        List<ListItem> listItems = new ArrayList<>();
+        AsyncHttpClient client = new AsyncHttpClient();
+        client.get("https://academy.zenva.com/wp-json/zva-mobile-app/v1/demoWidevine", new AsyncHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, byte[] responseBody) {
+                String response = new String(responseBody);
 
-        // Initialize a SourceItem with a DRM configuration
-        AdaptiveSource adaptiveSource = new DASHSource("https://zavideoplatform.streaming.mediaservices.windows.net///2c856c2a-b469-4a0d-a6c1-984fee7017c9/03. Creating Numpy Arrays.ism/manifest(format=mpd-time-csf,encryption=cenc)");
+                Log.v("JSON_R", "Response: " + response);
+                try {
+                    JSONObject jsonObject = new JSONObject(response);
+
+                    String streamingLocatorUrlWidevine = jsonObject.getString("streamingLocatorUrlWidevine");
+                    String tokenWidevine = jsonObject.getString("tokenWidevine");
+                    String ccUrl = jsonObject.getString("ccUrl");
+
+                    insertListItem(streamingLocatorUrlWidevine, tokenWidevine, ccUrl);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            @Override
+            public void onFailure(int statusCode, Header[] headers, byte[] responseBody, Throwable error) {
+                Log.v("JSON_R", "Error: " + error.getMessage());
+            }
+        });
+    }
+
+    private void insertListItem(String streamUrl, String token, String ccUrl)
+    {
+        AdaptiveSource adaptiveSource = new DASHSource(streamUrl);
         SourceItem sourceItem = new SourceItem(adaptiveSource);
         sourceItem.setTitle("Zenva");
         // setup DRM handling
-        String drmLicenseUrl = "https://zavideoplatform.keydelivery.eastus.media.azure.net/Widevine/?kid=29d061a3-82f0-4b19-8add-0a1395f17851";
+        String drmLicenseUrl = Util.WIDEVINE_DRM_LICENSE;
 
         // Create a new source item
         Map<String, String> headers = new HashMap<>();
-        headers.put("Authorization", "Bearer " + "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2FjYWRlbXkuemVudmEuY29tIiwiaWF0IjoxNTU1Nzg5ODI0LCJleHAiOjE1NTU4MDQyNTQsImF1ZCI6Imh0dHBzOi8vYWNhZGVteS56ZW52YS5jb20iLCJzdWIiOjAsInp2YWlwIjoiMTA0LjE1MS42LjUyIiwienZhcG9zdCI6MH0.jfWk8QGdcKjXTxp8oj4Lfehr5mgE5JDq5KvHPnasakY");
+        headers.put("Authorization", "Bearer " + token);
 
         DRMConfiguration config = new WidevineConfiguration(drmLicenseUrl);
         config.setHttpHeaders(headers);
         sourceItem.addDRMConfiguration(config);
 
-        sourceItem.addSubtitleTrack("https://zavideoplatform.blob.core.windows.net/closed-captions/lesson-635112-en.vtt", MimeTypes.TYPE_VTT ,"", null, true, "hi");
+        sourceItem.addSubtitleTrack(ccUrl, MimeTypes.TYPE_VTT ,"", null, true, "en");
 
         // Initialize an OfflineContentManager in the rootFolder with the id "artOfMotionDrm"
         OfflineContentManager zenvaDrmOfflineContentManager = OfflineContentManager.getOfflineContentManager(sourceItem, this.rootFolder.getPath(), "Zenva", this, this);
 
         // Create a ListItem from the SourceItem and the OfflienContentManager
         ListItem zenvaDrmListItem = new ListItem(sourceItem, zenvaDrmOfflineContentManager);
+        zenvaDrmListItem.getOfflineContentManager().getOptions();
+        this.listItems.add(zenvaDrmListItem);
+        this.listAdapter.notifyDataSetChanged();
+    }
 
-        // Add the ListItem to the List
-        listItems.add(zenvaDrmListItem);
-
-
+    private List<ListItem> getListItems()
+    {
+        List<ListItem> listItems = new ArrayList<>();
         return listItems;
     }
 }

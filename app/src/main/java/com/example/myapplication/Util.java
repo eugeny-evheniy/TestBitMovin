@@ -17,6 +17,7 @@ import java.util.List;
 
 public class Util
 {
+    public  static  String WIDEVINE_DRM_LICENSE = "https://zavideoplatform.keydelivery.eastus.media.azure.net/Widevine/?kid=29d061a3-82f0-4b19-8add-0a1395f17851";
     private Util()
     {
     }
